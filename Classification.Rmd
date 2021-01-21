@@ -312,3 +312,60 @@ ggplot(aes(x = PC1, y=PC2, fill=veg_class), data=dune_scores) +
 ```
 
 The above graph shows a multivariate ordination (via PCA) of your dune data, overlaid with a multivariate classification (via hclust) of the same data.  You also know that the soil depth differs between the three classes, with the highest values (and greatest variability) in Class 2. 
+## Classifying the species
+### What will this show?
+Just as classifying samples groups samples with similar species composition into
+the same class, you can do the same with species. Now, species that tend to co-
+occur in the same samples (quadrats, aquatic samples, pitfalls etc.) are likely
+to be put into the same class.
+
+The classification methods we have been looking at do not do this automatically.
+However it is easy to implement by **transposing** our original table of data,
+i.e. putting it through 90-degrees so that each column is a sample, and each row
+a species, then using the same commands as before. Luckily, it is easy to 
+transpose a table of data using the `t()` function.
+
+Let's begin with average linkage distance. Notice the use of the `t()` function
+when we call `vegdist()`:
+
+```{r spp_avg, exercise=TRUE}
+dune_spp.dis <- vegdist(t(dune))
+dune_spp.cla <- hclust(dune_spp.dis, method="average")
+plot(dune_spp.cla)
+```
+
+By default `vegdist()` uses the Bray-Curtis index, but this is often less-effective
+with species data, especially when there are a lot of zeroes. Good alternatives
+are the Jaccard index and the Raup-Crick indices, as these are affected by the
+sparsity of the data. Let's retry our classification with Raup-Crick, which is
+accessed via the `method="raup"` option. See the help page for `vegdist()` for
+all the options:
+
+```{r spp_avg2, exercise=TRUE}
+dune_spp.dis <- vegdist(t(dune), method="raup")
+dune_spp.cla <- hclust(dune_spp.dis, method="average")
+plot(dune_spp.cla)
+```
+
+## Heatmaps
+A useful trick is to re-order both your samples and species on the basis of their
+respective classification trees, and then show the original table re-ordered,
+with colours representing the abundance of each species. The `vegan` package
+has two functions, `vegemite` for text-based output, and `tabasco` for colours.
+Let's go hot and spicy....
+
+```{r tabasco, exercise=TRUE}
+# Create the dendrogram for the samples using default Bray-Curtis
+quadrat_tree <- hclust(vegdist(dune), "average")
+
+# Use Raup-Crick for the species, plus t() to transpose
+spp_tree <- hclust(vegdist(t(dune), "raup"), "average")
+
+# Create heatmap
+tabasco(dune, quadrat_tree, spp_tree)
+```
+
+When you run this in RStudio, make sure that your graphics monitor is large 
+enough to display all the species. On this interactive website it is unlikely to
+display all 20 quadrats and all 30 species, but hopefully it will give you an
+idea of how these data can be displayed.
