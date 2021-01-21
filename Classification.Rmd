@@ -212,3 +212,103 @@ cor(dune.dis, cophenetic(dune.cls))
 cor(dune.dis, cophenetic(dune.clc))
 ```
 Based on the correlations above, which do you think is the best of the three classification methods on these data?
+
+## Deciding on the best number of classes
+The exact number of classes you end up with depends both on the classification method used, and the height you decide to divide your dendrogram at.  If the height is set at 0.7 we would have 3 classes for example, but the decision on the number of classes is subjective and your judgement!  Using the complete-linked classification and 3 classes we can do the following
+using the `rect.hclust` to display 3 classes on our dendrogram, and `cutree` to
+extract the data
+
+```{r, three_groups-setup}
+dune.dis <- vegdist(dune)
+dune.cla <- hclust(dune.dis, method="average")
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+```
+
+```{r three_groups, exercise=TRUE}
+plot(dune.clc)
+rect.hclust(dune.clc, 3)
+dune.grp <- cutree(dune.clc, 3)
+print(dune.grp)
+```
+
+Look at the contents of `dune.grp` and you will see that the `cutree` command produces the classes for each of your samples based on how you have decided to cut your dendrogram into 3 groups.
+
+You can use this classification in the same way as any other factor for your dune vegetation data.  For example, do show how the depth of the A1 soild horizon differs amongst your three classes (__Note:__ include `as.factor(dune.grp)` in the `ggplot` call to ensure that the numeric codes are treated as categorical):
+
+```{r boxplot_grp-setup}
+dune.dis <- vegdist(dune)
+dune.cla <- hclust(dune.dis, method="average")
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+dune.grp <- cutree(dune.clc, 3)
+```
+```{r boxplot_grp, exercise=TRUE}
+data(dune.env)
+
+ggplot(dune.env, aes(x=as.factor(dune.grp), y=A1)) +
+   geom_boxplot() +
+   xlab("Vegetation classification group") +
+   ylab("Depth of A1 soil horizon") +
+   theme_classic()
+```
+
+Of course, depending on your perspective, you might like to think that "explanatory"
+variables should be on the horizontal x-axis, and "response" variables on the 
+vertical y-axis. So, if you think that the vegetation groups are more likely to
+depend on the soil depth, you might want to 'flip' your boxplot. Of course the
+decision is up to you, and based on your environmental knowledge! Use `coord_flip()`
+to swap axes:
+
+```{r boxplot_grp2-setup}
+dune.dis <- vegdist(dune)
+dune.cla <- hclust(dune.dis, method="average")
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+dune.grp <- cutree(dune.clc, 3)
+```
+```{r boxplot_grp2, exercise=TRUE}
+data(dune.env)
+
+ggplot(dune.env, aes(x=as.factor(dune.grp), y=A1)) +
+   geom_boxplot() +
+   xlab("Vegetation classification group") +
+   ylab("Depth of A1 soil horizon") +
+   coord_flip() +
+   theme_classic()
+```
+
+
+
+Likewise, you can overlay your classification onto your PCA scores that you
+calculated earlier. But now the classes are based on the species, not the habitat::
+
+```{r dune_hull-setup}
+dune.pca <- rda(dune)
+
+dune_scores <- ordi_scores(dune.pca, display="sites")
+
+dune.dis <- vegdist(dune)
+dune.cla <- hclust(dune.dis, method="average")
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+dune.grp <- cutree(dune.clc, 3)                           
+
+```
+```{r dune_hull, exercise=TRUE}
+# Note the use of as.factor to force group numbers to be treated as a factor
+dune_scores <- mutate(dune_scores, veg_class=as.factor(dune.grp))
+
+dune_hull <- dune_scores %>% 
+  group_by(veg_class) %>% 
+  slice(chull(PC1, PC2))
+
+ggplot(aes(x = PC1, y=PC2, fill=veg_class), data=dune_scores) +
+  geom_point() +
+  scale_fill_discrete(name="Vegetation class") +
+  geom_polygon(data=dune_hull, alpha=0.5) +
+  theme_classic()
+
+```
+
+The above graph shows a multivariate ordination (via PCA) of your dune data, overlaid with a multivariate classification (via hclust) of the same data.  You also know that the soil depth differs between the three classes, with the highest values (and greatest variability) in Class 2. 
