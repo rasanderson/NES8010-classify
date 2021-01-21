@@ -1,0 +1,157 @@
+---
+title: "Tutorial"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(mosaic)
+library(vegan)
+source("nes8010.R")
+data(dune)
+data(dune.env)
+data(varespec)
+data(varechem)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Introduction
+Sometimes you will have undertaken an ordination where you already know in 
+advance that your samples belong to different groups (e.g. different habitats,
+or experimental treatments). It can therefore be useful to modify your basic
+ordination plots to show these groups or classes. This type of modification to
+standard ordination methods is typically applied to unconstrained methods such
+as PCA, CA or NMDS.
+
+A second approach is where you have for example species by samples data, and
+you wish to classify them on the basis of their species composition. These
+classification or 'clustering' methods are widely used in ecology, and they
+underpin some of the standard published descriptions of different ecological
+communities.
+
+## Modifiying base ordination graphics
+If you are using the `ordi_plot()` functions, these produce output in `ggplot`-
+compatible format, but can be trickier to modify. You may therefore find it
+easier to use the `scores()` function to extract the relevant sample scores,
+and then use standard `ggplot` functions.
+
+### Changing point colours
+Let's begin with the `dune` and `dune.env` data that you considered earlier.
+
+```{r baseline_pca, exercise=TRUE}
+summary(dune.env)  # Notice the three categories for Use
+dune.pca <- rda(dune)
+ordi_plot(dune.pca, display="sites", type="points")
+```
+
+The `dune.env` data splits the management into "Hayfield", "Haypasture" and
+"Pasture" and it would be useful to show these as different colour categories
+on the plot. The easiest way to do this is to extract PCA scores, and combine
+them with the environmental categories for plotting:
+
+```{r tweak_pca_plot-setup}
+dune.pca <- rda(dune)
+```
+
+```{r tweak_pca_plot, exercise=FALSE, echo=TRUE}
+dune_scores <- ordi_scores(dune.pca, display="sites")
+
+ggplot(aes(x = PC1, y=PC2, colour=dune.env$Use), data=dune_scores) +
+  geom_point()
+
+```
+
+One disadvantage of this approach is that the legend is captioned "dune.env$Use"
+which is a bit messy. You can modify it to something clearer using the
+`scale_colour_manual()` function from `ggplot2`. You can also use this function
+to manually set the colours to your own choice, and to change the label "Haypastu"
+to the clearer "Hay pasture". It is easiest if the `dune.env` column `Use` is
+added to the `dune_scores` data.frame, which we can easily do, vor example via
+`mutate()`
+
+```{r tweak_pca_plt-setup}
+dune.pca <- rda(dune)
+```
+```{r tweak_pca_plt, exercise=TRUE, echo=TRUE}
+dune_scores <- ordi_scores(dune.pca, display="sites")
+dune_scores <- mutate(dune_scores, Use=dune.env$Use)
+
+ggplot(aes(x = PC1, y=PC2, colour=Use), data=dune_scores) +
+  geom_point() +
+  scale_colour_manual(name="Useage", values=c("red","green","blue"), labels=c("Hayfield", "Hay pasture", "Pasture"))
+
+```
+
+**Note** in the above code note that the first line of the `ggplot()` function
+uses `colour` rather than `fill` as an option, hence we use `scale_colour_manual`
+to fine-tune the appearance. If using `fill` as an option (see below) you will
+find it easier to use `scale_fill_discrete` as an option.
+
+### Convex polygons
+Another useful way to visulise the ordination plots with categories overlaid is
+through minimum convex polygons, in different colours around each class. Here is
+and example, again with the dune data:
+
+```{r min_viable_polygon, echo=FALSE}
+dune.pca <- rda(dune)
+dune_scores <- ordi_scores(dune.pca, display="sites")
+dune_scores <- mutate(dune_scores, Use=dune.env$Use)
+
+dune_hull <- dune_scores %>% 
+  group_by(Use) %>% 
+  slice(chull(PC1, PC2))
+
+ggplot(aes(x = PC1, y=PC2, fill=Use), data=dune_scores) +
+  geom_point() +
+  scale_fill_discrete(name="Useage", labels=c("Hayfield", "Hay pasture", "Pasture")) +
+  geom_polygon(data=dune_hull, alpha=0.5) +
+  theme_classic()
+
+```
+
+To create this type of plot we first have to create a **convex hull** which
+identifies the outer-most points for each group of your PCA points. We can do
+this with `slice()` which cuts out only the relevant rows of your original data,
+in combination with the `chull()` function which identifies the points. This is
+done by grouping your data on the `Use` variable:
+
+```{r, echo=TRUE}
+dune_hull <- dune_scores %>% 
+  group_by(Use) %>% 
+  slice(chull(PC1, PC2))
+
+print(dune_hull)
+```
+
+You can see that `dune_hull` contains fewer rows than the original data, as only
+the outermost points are needed for each group. Having created this convex hull,
+it can be fed into the `geom_polygon` function. The `alpha` option controls the
+transparency: re-run the code below several times to understand its role, by
+modifying the value of alpha between 0 and 1.
+
+```{r plot_chull-setup}
+dune.pca <- rda(dune)
+dune_scores <- ordi_scores(dune.pca, display="sites")
+dune_scores <- mutate(dune_scores, Use=dune.env$Use)
+```
+```{r plot_chull, exercise=TRUE}
+# Create the convex hull coordinates
+dune_hull <- dune_scores %>% 
+  group_by(Use) %>% 
+  slice(chull(PC1, PC2))
+
+# Add the polygon to your plot
+# Can you remember how to change the theme to classic, as shown above?
+ggplot(aes(x = PC1, y=PC2, fill=Use), data=dune_scores) +
+  geom_point() +
+  scale_fill_discrete(name="Useage", labels=c("Hayfield", "Hay pasture", "Pasture")) +
+  geom_polygon(data=dune_hull, alpha=0.5)
+
+```
+
+These examples use 'already known' classes of your samples, where they are
+grouped according to useage. However, you can also classify your samples based
+on similarity of species compisition. These classes can be shown as **dendrograms**
+or overlain in a similar way to what you have just seen onto an ordination plot.
