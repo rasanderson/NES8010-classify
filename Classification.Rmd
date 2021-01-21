@@ -155,3 +155,60 @@ These examples use 'already known' classes of your samples, where they are
 grouped according to useage. However, you can also classify your samples based
 on similarity of species compisition. These classes can be shown as **dendrograms**
 or overlain in a similar way to what you have just seen onto an ordination plot.
+
+## Multivariate classification or clustering
+The vegan package has a number of functions that allow you to do hierarchical classifications of species x samples data tables, and to sort your original tables of data to show the main trends.  Packages such as MASS (default) and labdsv also provide functions for fuzzy clustering and indicator species analysis.  We will focus on the tools available in vegan, using its example "dune" dataset.
+
+### Dissimilarity matrix
+Many classification methods are based on measuring 'dissimilarity' between samples, based on the species composition.  Therefore clustering is often a two-step process, involving the construction of a dissimilarity table, and then using an appropriate method to split this table up into separate classes. Here is the dissimilarity table for the dune data; it 
+has 20 rows and 20 columns (for the number of quadrats) and the values represent
+the disimilarity between 0 and 1 of any pair of quadrats.
+
+```{r dune dist for calc, echo=TRUE}
+dune.dis <- vegdist(dune)
+print(dune.dis)
+```
+
+The table above is a 'triangular matrix' showing the dissimilarity in species composition.  Only half the matrix is needed as this top-right triangle would contain the same information.  Values range between zero and one, with sites that are similar to each other having the lowest values (lowest dissimiliarity).
+
+### Classifying the dissimilarity matrix
+There are a number of ways of calculating ecological dissimilarity; the default used by vegdist is the Bray-Curtis index; other common ones you may see used are the Euclidean index and the Gower index (see the help page for the vegdist function for the full list of indices available).
+Now that you have calculated the dissimilarity values you can classify and plot the results.  Hierarchical classification produces a dendrogram or tree-like graph to describe the classification; the shape of this graph differs depending on the algorithm used, but I usually find the 'average' linkage method (based on the average dissimilarity between groups of sites) the most robust:
+
+```{r classify dune data, echo=TRUE}
+dune.cla <- hclust(dune.dis, method="average")
+plot(dune.cla)
+```
+
+
+Reading the dendrogram from top to bottom, the first division splits off samples 14, 15, 16 and 20 from all the others, so that they appear to be in a group on their own.  The next division separates samples 17 and 19 from the remainder.  Then site 1 is in a group of its own.  Finally there are two large groups, one containing sites 3, 4, 8, 9, 12 & 13; the second sites 2, 5, 6, 7, 10, 11 & 18.
+
+Other common methods of clustering are single and complete linkage:
+
+```{r s_and_c-setup}
+dune.dis <- vegdist(dune)
+```
+
+```{r s_and_c, exercise=TRUE}
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+plot(dune.cls)
+plot(dune.cla)
+
+```
+
+Display the classification trees for these methods and notice how the shape of the trees changes.  Which is the best method?  One simple approach is to measure the correlation between your original dissimilarity matrix and the inter-group dissimilarity at each step up the classification tree via the cophenetic function:
+
+```{r cophenetic-setup}
+dune.dis <- vegdist(dune)
+dune.cla <- hclust(dune.dis, method="average")
+dune.cls <- hclust(dune.dis, method="single")
+dune.clc <- hclust(dune.dis, method="complete")
+```
+
+```{r cophenetic, exercise=TRUE}
+cor(dune.dis, cophenetic(dune.cla))
+cor(dune.dis, cophenetic(dune.cls))
+cor(dune.dis, cophenetic(dune.clc))
+```
+Based on the correlations above, which do you think is the best of the three classification methods on these data?
