@@ -1,0 +1,12 @@
+name: NES8010Classification
+title: NES8010Classification
+username:
+account: naturalandenvironmentalscience
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3502199
+bundleId: 4126456
+url: https://naturalandenvironmentalscience.shinyapps.io/NES8010Classification/
+when: 1611250286.45286
+asMultiple: FALSE
+asStatic: FALSE

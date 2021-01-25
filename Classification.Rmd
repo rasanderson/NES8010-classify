@@ -1,5 +1,5 @@
 ---
-title: "Tutorial"
+title: "Classifying species assemblages"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -193,7 +193,7 @@ dune.dis <- vegdist(dune)
 dune.cls <- hclust(dune.dis, method="single")
 dune.clc <- hclust(dune.dis, method="complete")
 plot(dune.cls)
-plot(dune.cla)
+plot(dune.clc)
 
 ```
 
