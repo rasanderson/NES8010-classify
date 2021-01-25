@@ -1,5 +1,5 @@
 ---
-title: "Classifying species assemblages"
+title: "Classify species assemblages"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
