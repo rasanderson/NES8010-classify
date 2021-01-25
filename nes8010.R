@@ -560,13 +560,13 @@ anova3 <- function(lm_mod, ...){
 ##' sol <- ordi_nmds(dune)
 ##' ordi_plot(sol)
 `ordi_plot.metaMDS` <- function(object, axes = c(1,2), geom = c("point", "text"),
-                                layers = c("species", "sites"),
+                                display = c("species", "sites"),
                                 legend.position = "none",
                                 title = NULL, subtitle = NULL, caption = NULL,
                                 ylab, xlab, ...) {
   axes <- rep(axes, length.out = 2L)
   obj <- fortify(object, axes = axes, ...)
-  obj <- obj[obj$Score %in% layers, ]
+  obj <- obj[obj$Score %in% display, ]
   ## sort out x, y aesthetics
   vars <- getDimensionNames(obj)
   ## skeleton layer
